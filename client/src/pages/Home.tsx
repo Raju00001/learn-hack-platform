@@ -12,98 +12,25 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useState } from "react";
-import { Zap, Lock, Unlock, Trophy, Target, BookOpen } from "lucide-react";
-
-interface Course {
-  id: string;
-  name: string;
-  icon: string;
-  level: "beginner" | "intermediate" | "advanced";
-  progress: number;
-  required_diamonds: number;
-  unlocked: boolean;
-  modules: number;
-  color: string;
-}
-
-const courses: Course[] = [
-  {
-    id: "html",
-    name: "HTML",
-    icon: "🏗️",
-    level: "beginner",
-    progress: 100,
-    required_diamonds: 0,
-    unlocked: true,
-    modules: 5,
-    color: "from-cyan-500 to-blue-500",
-  },
-  {
-    id: "css",
-    name: "CSS",
-    icon: "🎨",
-    level: "beginner",
-    progress: 75,
-    required_diamonds: 5,
-    unlocked: true,
-    modules: 5,
-    color: "from-purple-500 to-pink-500",
-  },
-  {
-    id: "js",
-    name: "JavaScript",
-    icon: "⚡",
-    level: "intermediate",
-    progress: 40,
-    required_diamonds: 15,
-    unlocked: true,
-    modules: 8,
-    color: "from-yellow-400 to-orange-500",
-  },
-  {
-    id: "java",
-    name: "Java",
-    icon: "☕",
-    level: "intermediate",
-    progress: 0,
-    required_diamonds: 30,
-    unlocked: false,
-    modules: 8,
-    color: "from-red-500 to-pink-500",
-  },
-  {
-    id: "kotlin",
-    name: "Kotlin",
-    icon: "🎯",
-    level: "advanced",
-    progress: 0,
-    required_diamonds: 50,
-    unlocked: false,
-    modules: 6,
-    color: "from-green-400 to-emerald-500",
-  },
-  {
-    id: "cpp",
-    name: "C++",
-    icon: "⚙️",
-    level: "advanced",
-    progress: 0,
-    required_diamonds: 50,
-    unlocked: false,
-    modules: 7,
-    color: "from-blue-600 to-cyan-400",
-  },
-];
+import { Zap, Lock, Unlock, Trophy, Target, BookOpen, Sparkles } from "lucide-react";
+import { useGame } from "@/contexts/GameContext";
 
 export default function Home() {
-  const [diamonds, setDiamonds] = useState(25);
+  const { courses, userProgress, unlockCourse } = useGame();
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
+  const [showUnlockAnimation, setShowUnlockAnimation] = useState(false);
 
-  const handleUnlock = (course: Course) => {
-    if (!course.unlocked && diamonds >= course.required_diamonds) {
-      setDiamonds(diamonds - course.required_diamonds);
-      // In a real app, this would update the course state
-      alert(`🎉 Unlocked ${course.name}! You now have ${diamonds - course.required_diamonds} diamonds left.`);
+  const handleUnlock = (courseId: string) => {
+    if (unlockCourse(courseId)) {
+      setShowUnlockAnimation(true);
+      setTimeout(() => setShowUnlockAnimation(false), 2000);
+    }
+  };
+
+  const handleCourseClick = (courseId: string) => {
+    const course = courses.find((c) => c.id === courseId);
+    if (course?.unlocked) {
+      window.location.href = `/course?id=${courseId}`;
     }
   };
 
@@ -129,7 +56,7 @@ export default function Home() {
             <div className="text-2xl">💎</div>
             <div className="text-right">
               <div className="text-xs text-muted-foreground">Diamonds</div>
-              <div className="text-lg font-bold text-primary">{diamonds}</div>
+              <div className="text-lg font-bold text-primary">{userProgress.diamonds}</div>
             </div>
           </div>
         </div>
@@ -156,7 +83,9 @@ export default function Home() {
                   className="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-background font-bold px-8 py-3 rounded-lg shadow-lg shadow-cyan-500/50 hover:shadow-cyan-500/75 transition-all"
                   onClick={() => {
                     const htmlCourse = courses.find((c) => c.id === "html");
-                    if (htmlCourse) setSelectedCourse("html");
+                    if (htmlCourse?.unlocked) {
+                      handleCourseClick("html");
+                    }
                   }}
                 >
                   <BookOpen className="mr-2 h-5 w-5" />
@@ -184,7 +113,11 @@ export default function Home() {
               <Card
                 key={course.id}
                 className="group relative overflow-hidden bg-card border border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/20 cursor-pointer"
-                onClick={() => setSelectedCourse(course.id)}
+                onClick={() => {
+                  if (course.unlocked) {
+                    handleCourseClick(course.id);
+                  }
+                }}
               >
                 {/* Card background glow */}
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/0 to-sidebar-primary/0 group-hover:from-primary/5 group-hover:to-sidebar-primary/5 transition-colors"></div>
@@ -208,16 +141,20 @@ export default function Home() {
                   {/* Course Name and Level */}
                   <h3 className="text-2xl font-bold mb-2 text-foreground">{course.name}</h3>
                   <div className="flex items-center gap-2 mb-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      course.level === "beginner"
-                        ? "bg-green-500/20 text-green-300"
-                        : course.level === "intermediate"
-                          ? "bg-yellow-500/20 text-yellow-300"
-                          : "bg-red-500/20 text-red-300"
-                    }`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        course.level === "beginner"
+                          ? "bg-green-500/20 text-green-300"
+                          : course.level === "intermediate"
+                            ? "bg-yellow-500/20 text-yellow-300"
+                            : "bg-red-500/20 text-red-300"
+                      }`}
+                    >
                       {course.level.toUpperCase()}
                     </span>
-                    <span className="text-xs text-muted-foreground">{course.modules} modules</span>
+                    <span className="text-xs text-muted-foreground">
+                      {course.modules.length} modules
+                    </span>
                   </div>
 
                   {/* Progress Bar */}
@@ -236,22 +173,31 @@ export default function Home() {
 
                   {/* Action Button */}
                   {course.unlocked ? (
-                    <Button className="w-full bg-gradient-to-r from-primary to-sidebar-primary hover:from-primary/90 hover:to-sidebar-primary/90 text-background font-bold py-2 rounded-lg transition-all hover:shadow-lg hover:shadow-primary/50">
+                    <Button
+                      className="w-full bg-gradient-to-r from-primary to-sidebar-primary hover:from-primary/90 hover:to-sidebar-primary/90 text-background font-bold py-2 rounded-lg transition-all hover:shadow-lg hover:shadow-primary/50"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCourseClick(course.id);
+                      }}
+                    >
                       <Zap className="mr-2 h-4 w-4" />
                       Continue Learning
                     </Button>
                   ) : (
                     <Button
-                      onClick={() => handleUnlock(course)}
-                      disabled={diamonds < course.required_diamonds}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUnlock(course.id);
+                      }}
+                      disabled={userProgress.diamonds < course.requiredDiamonds}
                       className={`w-full font-bold py-2 rounded-lg transition-all ${
-                        diamonds >= course.required_diamonds
+                        userProgress.diamonds >= course.requiredDiamonds
                           ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-background hover:shadow-lg hover:shadow-yellow-500/50"
                           : "bg-muted text-muted-foreground cursor-not-allowed"
                       }`}
                     >
                       <Lock className="mr-2 h-4 w-4" />
-                      Unlock ({course.required_diamonds} 💎)
+                      Unlock ({course.requiredDiamonds} 💎)
                     </Button>
                   )}
                 </div>
@@ -267,7 +213,9 @@ export default function Home() {
               <div className="text-4xl">🎯</div>
               <div>
                 <div className="text-sm text-muted-foreground">Courses Unlocked</div>
-                <div className="text-3xl font-bold text-primary">3 / 6</div>
+                <div className="text-3xl font-bold text-primary">
+                  {userProgress.coursesUnlocked.length} / {courses.length}
+                </div>
               </div>
             </div>
           </Card>
@@ -277,7 +225,10 @@ export default function Home() {
               <div className="text-4xl">📚</div>
               <div>
                 <div className="text-sm text-muted-foreground">Modules Completed</div>
-                <div className="text-3xl font-bold text-sidebar-primary">12 / 39</div>
+                <div className="text-3xl font-bold text-sidebar-primary">
+                  {Object.values(userProgress.modulesCompleted).flat().length} /{" "}
+                  {courses.reduce((sum, c) => sum + c.modules.length, 0)}
+                </div>
               </div>
             </div>
           </Card>
@@ -286,8 +237,10 @@ export default function Home() {
             <div className="flex items-center gap-4">
               <div className="text-4xl">🏆</div>
               <div>
-                <div className="text-sm text-muted-foreground">Quiz Accuracy</div>
-                <div className="text-3xl font-bold text-green-400">87%</div>
+                <div className="text-sm text-muted-foreground">Total Diamonds</div>
+                <div className="text-3xl font-bold text-yellow-400">
+                  {userProgress.totalDiamondsEarned} 💎
+                </div>
               </div>
             </div>
           </Card>
